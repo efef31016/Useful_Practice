@@ -1,4 +1,4 @@
-# SVM
+# linear SVM
 # https://www.pycodemates.com/2022/10/implementing-SVM-from-scratch-in-python.html
 
 from sklearn import datasets
