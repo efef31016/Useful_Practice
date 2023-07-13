@@ -18,9 +18,10 @@ class SVMvisualize():
 
   # Visualizing SVM
   def visualize_svm(self,):
-
+    
+      # ax + by + c = 0 → y = (-ax - c) / b : 示意圖
       def get_hyperplane_value(x, w, b, offset):
-          return (-w[0][self.i] * x + b + offset) / w[0][self.j]
+          return (-w[0][self.i] * x - b + offset) / w[0][self.j]
 
       fig = plt.figure()
       ax = fig.add_subplot(1,1,1)
