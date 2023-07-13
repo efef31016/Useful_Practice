@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
-from SVM.dosvm import SVM
+# from svm import SVM
 
 # Creating dataset
 X, y = datasets.make_blobs(
@@ -20,6 +20,7 @@ X, y = datasets.make_blobs(
 
 # Classes 1 and -1
 y = np.where(y == 0, -1, 1)
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
 
 svm = SVM()
@@ -32,7 +33,7 @@ print("Prediction:", prediction)
 print("Accuracy:", accuracy_score(prediction, y_test))
 print("w, b:", [w, b])
 
-see = SVMvisualize(X, X_test, y_test, w, b)
+see = SVMvisualize(X, y, X_test, y_test, w, b)
 see.visualize_dataset()
 see.visualize_svm()
 
