@@ -1,17 +1,19 @@
 import matplotlib.pyplot as plt
 
+# Visualizing the scatter plot of the dataset
 class SVMvisualize():
 
-  def __init__(self, X, X_test, y_test, w, b):
-    self.X = X
+  def __init__(self, X_all, y_all , X_test, y_test, w, b):
+    self.X = X_all
+    self.y = y_all
     self.X_test = X_test
     self.y_test = y_test
     self.w = w
     self.b = b
 
   def visualize_dataset(self,):
-      plt.scatter(self.X[:, 0], self.X[:, 1], c=y)
-
+      plt.scatter(self.X[:, 0], self.X[:, 1], c = self.y)
+      plt.title("dataset")
 
   # Visualizing SVM
   def visualize_svm(self,):
@@ -29,11 +31,11 @@ class SVMvisualize():
       x1_1 = get_hyperplane_value(x0_1, self.w, self.b, 0)
       x1_2 = get_hyperplane_value(x0_2, self.w, self.b, 0)
 
-      x1_1_m = get_hyperplane_value(x0_1, self.w, self.b, -1)
-      x1_2_m = get_hyperplane_value(x0_2, self.w, self.b, -1)
+      x1_1_m = get_hyperplane_value(x0_1, self.w, self.b, -0.2)
+      x1_2_m = get_hyperplane_value(x0_2, self.w, self.b, -0.2)
 
-      x1_1_p = get_hyperplane_value(x0_1, self.w, self.b, 1)
-      x1_2_p = get_hyperplane_value(x0_2, self.w, self.b, 1)
+      x1_1_p = get_hyperplane_value(x0_1, self.w, self.b, 0.2)
+      x1_2_p = get_hyperplane_value(x0_2, self.w, self.b, 0.2)
 
       ax.plot([x0_1, x0_2], [x1_1, x1_2], "y--")
       ax.plot([x0_1, x0_2], [x1_1_m, x1_2_m], "k")
@@ -42,5 +44,6 @@ class SVMvisualize():
       x1_min = np.amin(self.X[:, 1])
       x1_max = np.amax(self.X[:, 1])
       ax.set_ylim([x1_min - 3, x1_max + 3])
+      ax.set_title("test data")
 
       plt.show()
