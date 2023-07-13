@@ -2,7 +2,7 @@
 import numpy as np
 
 
-class SVM:
+class linearSVM:
 
     def __init__(self, alpha = 1.0):
         self.alpha = alpha
