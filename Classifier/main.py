@@ -33,7 +33,7 @@ print("Prediction:", prediction)
 print("Accuracy:", accuracy_score(prediction, y_test))
 print("w, b:", [w, b])
 
-see = SVMvisualize(X, y, X_test, y_test, w, b)
+see = SVMvisualize(X, y, X_test, y_test, w, b, 0, 1)
 see.visualize_dataset()
 see.visualize_svm()
 
