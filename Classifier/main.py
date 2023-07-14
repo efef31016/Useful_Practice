@@ -91,7 +91,7 @@ print(f'accuracy = {acc: .4f}')
 # Kmeans
 from sklearn.preprocessing import MinMaxScaler
 from sklearn import datasets
-# from Kms.doKms import Kmeans
+from Kms.doKms import Kmeans
 
 # Creating dataset
 X, y = datasets.make_blobs(
