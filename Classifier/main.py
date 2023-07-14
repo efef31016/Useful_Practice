@@ -86,3 +86,34 @@ y_pred = model.forward(test_feature).reshape(-1)
 y_pred_cls = y_pred.round()
 acc = np.sum(y_pred_cls == test_target) / test_target.shape[0]
 print(f'accuracy = {acc: .4f}')
+
+
+# Kmeans
+from sklearn.preprocessing import MinMaxScaler
+from sklearn import datasets
+# from Kms.doKms import Kmeans
+
+# Creating dataset
+X, y = datasets.make_blobs(
+
+        n_samples = 100, # Number of samples
+        n_features = 2, # Features
+        centers = 2,
+        cluster_std = 1,
+        random_state=40
+    )
+
+# It is important to balance scales
+scaler = MinMaxScaler()
+X = scaler.fit_transform(X)
+k=2
+Tol = 1e-5
+
+best_center = Kmeans(k, X)
+best_center.fit(Tol)
+
+# plot and record update process
+center = best_center.center_save
+image_files = ["%d.png"%i for i in range(4)]
+process(center)
+gif(image_files)
