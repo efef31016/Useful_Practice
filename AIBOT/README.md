@@ -1,4 +1,4 @@
-**目標**: 以 flask 實現網頁 APP，並利用 pytorch 訓練__語言到對語言__架構，把使用者輸入丟進 pre-train model 進行回應。  
+**目標**: 以 flask 實現網頁 APP，並利用 pytorch 訓練*語言到對語言*架構，把使用者輸入丟進 pre-train model 進行回應。  
 
 資料集:  
 ptt 來自 https://github.com/zake7749/Gossiping-Chinese-Corpus/tree/master  
