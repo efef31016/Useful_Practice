@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ChatBot</title>
+    <style>
+        
+        body {
+            font-family: Arial, sans-serif;
+        }
+        
+        .chatbox {
+            width: 300px;
+            height: 400px;
+            background-size: cover;
+            background-position: center;
+            background-color: #f9f9f9;
+            border: 3px solid #ccc;
+            border-radius: 5px;
+            margin: 20px auto;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        
+        .user-message {
+            text-align: right;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 15px;
+            padding: 8px 15px;
+            padding-right: 10px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        .bot-message {
+            text-align: left;
+            background-color: #f1f1f1;
+            color: #000;
+            border-radius: 15px;
+            padding: 8px 15px;
+            margin-bottom: 10px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        
+        .user-input-container {
+            width: 27%;
+            margin: 0 auto;
+            display: flex;
+        }
+
+        .user-input {
+            flex: 1;
+            padding: 10px;
+        }
+
+        .send-button {
+            margin-left: 10px;
+            padding: 10px 20px;
+        }
+        
+        h1 {
+            text-align: center;
+        }
+        
+    </style>
+</head>
+<body>
+    <script src="script.js"></script>
+    
+    <h1>我們來聊...</h1>
+    
+    <div class="chatbox">
+        <!-- 動態添加 -->
+    </div>
+    
+    <div class="user-input-container">
+        <input type="text" class="user-input" id="userInput" placeholder="Type your message here...">
+        <button class="send-button" id="sendButton">Send</button>
+    </div>
+
+    <script>
+        var chatbox = document.querySelector('.chatbox');
+        var userInput = document.getElementById('userInput');
+        var sendButton = document.getElementById('sendButton');
+        
+        function appendMessage(text, isUserMessage = false) {
+            var newMessage = document.createElement('div');
+            newMessage.textContent = text;
+            if (isUserMessage) {
+                newMessage.classList.add('user-message');
+            } else {
+                newMessage.classList.add('bot-message');
+            }
+            chatbox.appendChild(newMessage);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        sendButton.addEventListener('click', function() {
+            var inputText = userInput.value;
+            appendMessage(inputText, true);
+
+            // 使用者輸入發送給後端
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: inputText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                var responseMessage = data.message;
+                appendMessage(responseMessage);
+            });
+
+            userInput.value = '';
+        });
+
+        userInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendButton.click();
+            }
+        });
+    </script>
+    
+</body>
+</html>

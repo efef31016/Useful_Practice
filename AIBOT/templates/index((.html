@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ChatBot</title>
+    <style>
+        
+        body {
+            font-family: Arial, sans-serif;
+        }
+        
+        /* 漢堡菜單樣式 */
+        .hamburger-menu {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 30px;
+            height: 20px;
+            cursor: pointer;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+        }
+
+        .hamburger-menu span {
+            width: 100%;
+            height: 3px;
+            background-color: #000;
+            transition: transform 0.3s ease;
+        }
+
+        .hamburger-menu.active span:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+        }
+
+        .hamburger-menu.active span:nth-child(2), .hamburger-menu.active span:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+
+        /* 菜單內容樣式 */
+        .menu-content {
+            display: none;
+            background-color: #f1f1f1;
+            position: fixed;
+            top: 20px;
+            left: 60px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            z-index: 9998;
+        }
+
+        .hamburger-menu.active + .menu-content {
+            display: block;
+        }
+
+        /* 菜單項樣式 */
+        .menu-item {
+            padding: 5px;
+            cursor: pointer;
+        }
+        
+        .chatbox {
+            width: 300px;
+            height: 400px;
+            background-size: cover;
+            background-position: center;
+            background-color: #f9f9f9;
+            border: 3px solid #ccc;
+            border-radius: 5px;
+            margin: 20px auto;
+            padding: 10px;
+            overflow-y: auto;
+            opacity: 0.3;
+        }
+        
+        .user-message {
+            text-align: right;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 15px;
+            padding: 8px 15px;
+            padding-right: 10px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        .bot-message {
+            text-align: left;
+            background-color: #f1f1f1;
+            color: #000;
+            border-radius: 15px;
+            padding: 8px 15px;
+            margin-bottom: 10px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        
+        .user-input-container {
+            width: 27%;
+            margin: 0 auto;
+            display: flex;
+        }
+
+        .user-input {
+            flex: 1;
+            padding: 10px;
+        }
+
+        .send-button {
+            margin-left: 10px;
+            padding: 10px 20px;
+        }
+        
+        .footer {
+            position: fixed;
+            width: 100%;
+            height: auto;
+            background-color: #f1f1f1;
+            padding: 3px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        
+        .newscontainer {
+            text-align: center;
+        }
+        
+        .news-container {
+          text-align: center;
+        }
+
+        .news-category {
+          color: red; /* 你可以自行設定顏色或其他樣式 */
+        }
+        
+        
+        h1 {
+            text-align: center;
+        }
+        h3 {
+            text-align: center;
+        }
+        
+    </style>
+</head>
+<body>
+    <script src="script.js"></script>
+    
+    <h1>我們來聊...</h1>
+    
+    <!-- 漢堡菜單 -->
+    <div class="hamburger-menu" onclick="toggleMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+
+    <!-- 菜單內容 -->
+    <div class="menu-content">
+        <div class="menu-item" onclick="handleItemClick(1);">政治</div>
+        <div class="menu-item" onclick="handleItemClick(2);">電影</div>
+        <div class="menu-item" onclick="handleItemClick(3);">明星</div>
+    </div>
+    
+    <div class="chatbox">
+        <!-- 動態添加 -->
+    </div>
+    
+    <div class="user-input-container">
+        <input type="text" class="user-input" id="userInput" placeholder="Type your message here...">
+        <button class="send-button" id="sendButton">Send</button>
+    </div>
+
+    <script>
+        var chatbox = document.querySelector('.chatbox');
+        var userInput = document.getElementById('userInput');
+        var sendButton = document.getElementById('sendButton');
+        
+        // 打開漢堡菜單
+        function toggleMenu() {
+            var menu = document.querySelector(".hamburger-menu");
+            menu.classList.toggle("active");
+        }
+        
+        // 換背景
+        function  changeFigure(url) {
+            var answer = confirm('想換聊天室默認背景嗎?');
+                if (answer) {
+                    chatbox.style.backgroundImage = "url(" + url + ")";
+                } else {chatbox.style.backgroundImage = "";}
+        }
+        
+        // 抓取新聞
+        // function fetchAndDisplayNews(url, containerId) {
+        //     fetch(url)  // 發起網路請求
+        // }
+        
+        
+        // 放相關新聞
+        function showNews(item) {
+          let NewsUrl1, NewsUrl2, NewsUrl3, NewsUrl4, NewsUrl5, category;
+
+          if (item == 1) {
+            NewsUrl1 = 'https://tw.news.yahoo.com/politics/';
+            NewsUrl2 = 'https://news.ltn.com.tw/list/breakingnews/politics';
+            NewsUrl3 = 'https://www.cna.com.tw/list/aipl.aspx';
+            NewsUrl4 = 'https://www.setn.com/Catalog.aspx?PageGroupID=6';
+            NewsUrl5 = "https://tw.nextapple.com/realtime/politics";
+            category = '政治';
+          } else if (item == 2) {
+            NewsUrl1 = 'https://tw.news.yahoo.com/tv-radio/';
+            NewsUrl2 = 'https://art.ltn.com.tw/';
+            NewsUrl3 = 'https://www.cna.com.tw/video';
+            NewsUrl4 = 'https://www.setn.com/Videos.aspx';
+            NewsUrl5 = "https://tw.nextapple.com/realtime/entertainment";
+            category = '電影';
+          } else if (item == 3) {
+            NewsUrl1 = 'https://tw.news.yahoo.com/celebrity/';
+            NewsUrl2 = 'https://istyle.ltn.com.tw/';
+            NewsUrl3 = 'https://www.cna.com.tw/list/amov.aspx';
+            NewsUrl4 = 'https://star.setn.com/?pk_vid=734a0ea20cb877e71690487544d0f0ce';
+            NewsUrl5 = "https://tw.nextapple.com/realtime/gorgeous";
+            category = '明星';
+          } else {
+            // 如果 item 不是 1、2 或 3 的其他情況，你可能需要給定預設值
+            NewsUrl1 = '';
+            NewsUrl2 = '';
+            NewsUrl3 = '';
+            NewsUrl4 = '';
+            NewsUrl5 = '';
+          }
+
+          const News = [
+            {
+              title: "奇摩新聞",
+              link: NewsUrl1,
+            },
+            {
+              title: "自由時報",
+              link: NewsUrl2,
+            },
+            {
+              title: "中央通訊社",
+              link: NewsUrl3,
+            },
+            {
+              title: "三立新聞網",
+              link: NewsUrl4,
+            },
+            {
+              title: "蘋果日報",
+              link: NewsUrl5,
+            },
+          ];
+
+          const newsContainer = document.getElementById('newsContainer');
+
+          // 清空容器內容
+          newsContainer.innerHTML = '';
+
+          // 創建連結
+          News.forEach(news => {
+            const newsLink = document.createElement('a');
+            newsLink.href = news.link;
+            newsLink.textContent = news.title;
+            newsLink.style.display = 'block';
+              
+            newsContainer.appendChild(newsLink);
+          });
+            
+          const newsCategory = document.querySelector('.news-category');
+          newsCategory.textContent = category;
+        }
+
+
+        // 有些網址需進行轉碼
+        function handleItemClick(item) {
+            if (item == 1) {
+                changeFigure('https://bucket-img.tnlmedia.com/cabinet/files/consoles/1/teams/1/2022/10/meVyXJUDaWos4F0c7XtuZA0B0Yo9Tku7p6JcvjTl.jpg?w=750&fit=max&auto=compress');
+                showNews(item);
+            } else if (item == 2) {
+                 changeFigure('https://doqvf81n9htmm.cloudfront.net/data/changchi_177/7-16/730/1005/%EF%BC%91%EF%BC%92/87/1122/1204/1223/0102/FotoJet%282%29.jpg');
+                showNews(item);
+            } else if (item == 3){
+                changeFigure('https://cdn.bella.tw/files-20220421/00000%281%29.jpg');
+                showNews(item);
+        } else {}
+        }
+        
+        function appendMessage(text, isUserMessage = false) {
+            var newMessage = document.createElement('div');
+            newMessage.textContent = text;
+            if (isUserMessage) {
+                newMessage.classList.add('user-message');
+            } else {
+                newMessage.classList.add('bot-message');
+            }
+            chatbox.appendChild(newMessage);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        sendButton.addEventListener('click', function() {
+            var inputText = userInput.value;
+            appendMessage(inputText, true);
+
+            // 使用者輸入發送給後端
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: inputText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                var responseMessage = data.message;
+                appendMessage(responseMessage);
+            });
+
+            userInput.value = '';
+        });
+
+        userInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendButton.click();
+            }
+        });
+    </script>
+    
+    <p style="white-space: pre-line;">
+    
+        
+        
+        
+        
+    </p>
+    
+    <div class="news-container">
+      <h3>相關<span class="news-category"></span>新聞</h3>
+    </div>
+    
+    <div class="newscontainer">
+      <div class="news" id="newsContainer"></div>
+    </div>
+    
+    
+    <div class="footer">
+        <p>電話:&nbsp 0967076527 &nbsp 電子信箱:&nbsp yhocotw31016@gmail.com &nbsp GITHUB:&nbsp </p>
+    </div>
+    
+    
+</body>
+</html>
