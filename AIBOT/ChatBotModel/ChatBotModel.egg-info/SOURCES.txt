@@ -1,0 +1,5 @@
+setup.py
+ChatBotModel.egg-info/PKG-INFO
+ChatBotModel.egg-info/SOURCES.txt
+ChatBotModel.egg-info/dependency_links.txt
+ChatBotModel.egg-info/top_level.txt
