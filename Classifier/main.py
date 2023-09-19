@@ -117,3 +117,19 @@ center = best_center.center_save
 image_files = ["%d.png"%i for i in range(4)]
 process(center)
 gif(image_files)
+
+
+import sklearn.datasets as datasets
+X, y = datasets.make_moons(n_samples=100, shuffle=False, noise=0.1, random_state=42)
+
+eps = 0.3
+minpts = 4
+dbscan = DBCSAN(X, eps, minpts)
+y_pred = dbscan.fit()[:,-1]
+save = dbscan.update_save
+Dbscan_process(save)
+image_files = ["dbscan_%d.png"%(i*100) for i in range(9)]
+# good for watching
+for _ in range(3):
+  image_files.append("dbscan_800.png")
+gif(image_files, "update_dbcsan.gif")
