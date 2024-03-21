@@ -25,13 +25,23 @@ from sklearn.metrics import mean_squared_error
 class GrangerCausality:
     def __init__(self, data, max_lag=4, significance_level=0.05):
         '''
-        data - index: Timestamp, columns: vary ts (features)
+        data - index: ID, columns: vary matomo features
         '''
-        self.data = data
+        self.data = self.create_feature_ts(data, "curious_column", sample_freq="D/W/M")
         self.max_lag = max_lag
         self.significance_level = significance_level
         self.significant_relations = {}
         self.x_y_fit_data = {}
+
+    def create_feature_ts(self, matomo_data, col_name, sample_freq="D"):
+        feature_matomo_data = matomo_data[["tracking_time", col_name]][~matomo_data[col_name].isnull()]
+        feature_matomo_data["tracking_time"] = pd.to_datetime(feature_matomo_data["tracking_time"])
+        feature_matomo_data.set_index("tracking_time", inplace=True)
+        result_ts = feature_matomo_data.groupby(col_name).resample(sample_freq).size()  # resample: 需注意 DataFrame 的索引為 Datetime
+        result_ts = result_ts.unstack(fill_value=0)
+        result_ts = result_ts.T
+        return result_ts
+
 
     def find_granger_relations(self):
         '''
@@ -216,10 +226,10 @@ class RegresionModel:
 if __name__ == "__main__":
 
     # 匯入符合格式的多維度時間序列資料
-    result_ts = pd.read_csv("multi-dim_ts.csv")
+    matomo_data = pd.read_csv("matomo_data.csv")
 
     # 建立該物件
-    data = GrangerCausality(result_ts)
+    data = GrangerCausality(matomo_data)
 
     # 可視化 Granger 因果關係
     granger_relation_data = data.find_granger_relations()
