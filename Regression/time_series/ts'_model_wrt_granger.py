@@ -103,31 +103,44 @@ class GrangerGraph:
         '''
         for source, targets in self.granger_data.items():
             for target, p_value, lag in targets:
-                # Edge thickness will be calculated during drawing based on p-value
                 self.G.add_edge(source, target, p_value=p_value, lag=lag)
 
-    def draw_graph(self):
+    def draw_graph(self, fig_path=None, highlight_node=None):
         '''
         Draws the graph with line thickness determined by the significance level.
         Lines are made wider to ensure each is clearly visible.
+        If highlight_node is provided, it highlights the first two outgoing edges from this node.
         '''
         plt.figure(figsize=(20, 16))
-        pos = nx.spring_layout(self.G, seed=42)  # Node position layout
+        pos = nx.spring_layout(self.G, seed=42, k=2)  # Node position layout
 
-        # Draw nodes
+        # Draw all nodes
         nx.draw_networkx_nodes(self.G, pos, node_size=5000, node_color='skyblue', alpha=0.6)
 
-        # Draw edges with modified width calculation for better visibility
-        edges = self.G.edges(data=True)
-        # Increase the base of line width to make the lines wider and more distinct
-        edge_widths = [1-10*data['p_value'] for u, v, data in edges]  
-        nx.draw_networkx_edges(self.G, pos, arrowstyle='-|>', arrowsize=20, width=edge_widths)
+        # Prepare for edge drawing
+        all_edges = list(self.G.edges(data=True))
+        edge_colors = ['black' for _ in all_edges]  # Default color
+        edge_widths = [1 - 10 * data['p_value'] for _, _, data in all_edges]
+
+        # Highlight edges if a node is specified
+        if highlight_node:
+            outgoing_edges = list(self.G.out_edges(highlight_node, data=True))
+            for i, (u, v, data) in enumerate(outgoing_edges[:2]):  # Get first two edges
+                idx = all_edges.index((u, v, data))  # Find the index of the edge in the complete edge list
+                edge_colors[idx] = 'red'  # Change color to highlight
+
+        # Draw edges
+        nx.draw_networkx_edges(self.G, pos, arrowstyle='-|>', arrowsize=20, edge_color=edge_colors, width=edge_widths)
 
         # Draw labels
         nx.draw_networkx_labels(self.G, pos, font_size=12)
 
         plt.title('Granger Causality Graph')
         plt.axis('off')
+
+        if fig_path:
+            plt.savefig(fig_path)
+
         plt.show()
 
 
@@ -234,7 +247,8 @@ if __name__ == "__main__":
     # 可視化 Granger 因果關係
     granger_relation_data = data.find_granger_relations()
     graph = GrangerGraph(granger_relation_data)
-    graph.draw_graph()
+    for event_name in granger_relation_data.keys():
+        graph.draw_graph(fig_path=f"./data_analysis_report/results/{event_name}_granger.png", highlight_node=event_name)
 
     # 回歸模型挑選
     x_y_fit_data = data.prepare_fit_data()
