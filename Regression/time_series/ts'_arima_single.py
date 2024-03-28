@@ -1,11 +1,15 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import os
 
 from statsmodels.tsa.arima.model import ARIMA
 from pmdarima import auto_arima
 import matplotlib.dates as mdates
+from joblib import Parallel, delayed
+
+from datetime import datetime, timedelta
+import json
+import os
 
 # 換成自己的用戶行為軌跡資料
 data_path = "~/matomo.csv"
@@ -24,66 +28,114 @@ def create_feature_ts(col_name, sample_freq="D"):
 result_ts = create_feature_ts(column_name_of_matomo)
 
 class ArimaModelerByColumn:
-    def __init__(self, result_ts):
-        '''
-        result_ts: pd.DataFrame
-        '''
-        self.result_ts = result_ts
-
-    def fit_predict(self, future_days=1, seasonal_days=7, freq="D", vertical_lines_weekday=None, plot_training_data=True, fig_path=None):
+    def __init__(self, result_ts, future_days=1, seasonal_days=7, freq="D", fig_path=None):
         '''
         parameters:
 
-        future_days: int, 預測未來幾天
-        seasonal_days: int, 週期性
-        freq: str, 頻率
-        vertical_lines_weekday: int, 畫出星期幾的垂直線
-        plot_training_data: bool, 是否畫出訓練資料
-        fig_path: str, 圖片存放路徑
+        result_ts: DataFrame; 以column為key的時間序列資料
+        future_days: int; 欲預測的天數
+        seasonal_days: int; 猜測的季節性天數
+        freq: str; 以何種頻率進行時間序列分析
+        fig_path: str; 儲存預測結果的路徑
         '''
-        predictions = {}
-        confidence_intervals = {}
-        for col_name in self.result_ts.columns:
-            print(f"Processing {col_name}...")
+        self.result_ts = result_ts
+        self.future_days = future_days
+        self.seasonal_days = seasonal_days
+        self.freq = freq
+        self.fig_path = fig_path
+        self.steep_cols = set()
 
-            auto_model = auto_arima(self.result_ts[col_name], seasonal=True, m=seasonal_days, trace=True, stepwise=True)
+    def log_msg(msg, log_file="process.log"):
+        '''
+        儲存日誌，將刪除三天前的日誌
+        '''
+        current_time = datetime.now()
+        three_days_ago = current_time - timedelta(days=3)
+        current_time_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
+
+        new_logs = []
+
+        # 去掉三天前的日誌
+        try:
+            with open(log_file, 'r') as file:
+                for line in file:
+                    try:
+                        timestamp_str, _ = line.split(' - ', 1)
+                        timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                        if timestamp > three_days_ago:
+                            new_logs.append(line)
+                    except ValueError:
+                        # 解析失敗，忽略
+                        pass
+        except FileNotFoundError:
+            # 若文件不存在，忽略
+            pass
+
+        # 添加新的日誌
+        new_logs.append(f"{current_time_str} - {msg}\n")
+
+        # 重新寫入日誌文件
+        with open(log_file, 'w') as file:
+            file.writelines(new_logs)
+
+    def rmse(self, x, y):
+        return np.sqrt(np.mean((x-y)**2))
+    
+    def process_column(self, col_name):
+        '''
+        透過 AIC 選擇 ARIMA 模型，並進行預測
+        '''
+        print(f"Processing {col_name}...")
+        try:
+            auto_model = auto_arima(self.result_ts[col_name], seasonal=True, m=self.seasonal_days, trace=True, stepwise=True)
             print(auto_model.summary())
+
             model = ARIMA(self.result_ts[col_name], order=auto_model.order, seasonal_order=auto_model.seasonal_order)
             model_fit = model.fit()
-            print(model_fit.summary())
 
             len_ts = len(self.result_ts[col_name])
-            total_length = len_ts + future_days
-            forecast_result = model_fit.get_forecast(steps=future_days)
-            forecast_index = pd.date_range(start=self.result_ts.index[-1] + pd.Timedelta(days=1), periods=future_days, freq=freq)
+            total_length = len_ts + self.future_days
+            forecast_result = model_fit.get_forecast(steps=self.future_days)
+            forecast_index = pd.date_range(start=self.result_ts.index[-1] + pd.Timedelta(days=1), periods=self.future_days, freq=self.freq)
             
             forecasted_values = pd.concat([model_fit.predict(start=1, end=len_ts, typ='levels'), forecast_result.predicted_mean])
-            forecasted_values.index = pd.date_range(start=self.result_ts.index[0], periods=total_length, freq=freq)
-            predictions[col_name] = forecasted_values
+            forecasted_values.index = pd.date_range(start=self.result_ts.index[0], periods=total_length, freq=self.freq) 
             
             ci = forecast_result.conf_int()
             ci.index = forecast_index
-            confidence_intervals[col_name] = ci
 
             error = self.rmse(self.result_ts[col_name][:len_ts], forecasted_values[:len_ts])
-            print(f"RMSE: {error}")
 
-            self._plot_results(col_name, predictions[col_name], confidence_intervals[col_name], vertical_lines_weekday, plot_training_data, fig_path=fig_path)
+        except Exception as e:
+            self.log_msg(f"Error processing {col_name}: {e}\n")
 
-        predictions_df = pd.DataFrame(predictions, index=pd.date_range(start=self.result_ts.index[0], periods=total_length, freq=freq))
-        predictions_df.to_csv('arima_predictions.csv', index=True)
-        print("Predictions saved to 'arima_predictions.csv'.")
+            self.steep_cols.add(col_name)
+            model_fit = None
+            forecasted_values = None
+            ci = None
+            error = -1
 
-    def _plot_results(self, col_name, predictions, confidence_interval, vertical_lines_weekday, plot_training_data, fig_path=None):
+        return col_name, error, model_fit, forecasted_values, ci
+
+    def parallel_fit_predict(self):
         '''
-        parameters:
-        
-        col_name: str, 欄位名稱
-        predictions: pd.Series, 預測值
-        confidence_interval: pd.DataFrame, 信賴區間
-        vertical_lines_weekday: int, 畫出星期幾的垂直線
-        plot_training_data: bool, 是否畫出訓練資料
-        fig_path: str, 圖片存放路徑，注意，這裡為資料夾不是 .png 路徑
+        並行透過 AIC 選擇每個 column 的 ARIMA 模型，並進行預測
+        '''
+        results = Parallel(n_jobs=-1)(
+            delayed(self.process_column)(col_name) for col_name in self.result_ts.columns
+        )
+        return results
+    
+    def save_predictions(self, predictions_df):
+        '''
+        儲存預測結果
+        '''
+        self.log_msg("Predictions saved to 'arima_predictions.csv'.")
+        predictions_df.to_csv(os.path.join(self.fig_path, "arima_predictions.csv"), index=True)
+
+    def plot_results(self, col_name, predictions, confidence_interval, vertical_lines_weekday, plot_training_data, fig_path=None):
+        '''
+        繪製預測結果
         '''
         plt.figure(figsize=(10, 6))
         
@@ -114,6 +166,9 @@ class ArimaModelerByColumn:
             plt.show()
 
     def _draw_vertical_lines(self, weekday, start_date, end_date):
+        '''
+        繪製垂直線，表示每週的星期幾
+        '''
         ax = plt.gca()
         ax.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=weekday))
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
@@ -128,15 +183,52 @@ class ArimaModelerByColumn:
             current_date += pd.Timedelta(days=1)
         plt.text(current_date, ax.get_ylim()[1], weekdays[weekday], ha='center', va='bottom', rotation=45, alpha=0.7, fontsize=9)
 
-    def rmse(self, x, y):
-        return np.sqrt(np.mean((x-y)**2))
 
 
-
-# 使用方式
+# 使用範例
 if __name__ == "__main__":
-    fig_path="~/single_arima/"
-    arima = ArimaModelerByColumn(result_ts=result_ts)
-    # 假設: 認為數據在每 seasonal 日有規律，想分析星期 N+1 的情況，建模後想預測未來 predict_day 天
-    arima.fit_predict(future_days=predict_day, seasonal_days=seasonal, vertical_lines_weekday=N, plot_training_data=True, fig_path=fig_path)
 
+    ################################################################################################
+    # 根據不同的seasonal，選出最佳模型並保存對應結果，其中包含以下五點
+    # 1. 最小 training error (RMSE)
+    # 2. 季節
+    # 3. 模型
+    # 4. 預測結果
+    # 5. 預測未來的信賴區間
+    fig_path = "~/single_arima"
+    season_guess = [i for i in range(1, 31)]
+    best_seasonal = {}
+    unstationary_cols = set()
+
+    print("choose best seasonal_day:...")
+    for seasonal_day in season_guess:
+        start = datetime.now()
+        arima = ArimaModelerByColumn(result_ts=result_ts, future_days=7, seasonal_days=seasonal_day, freq="D", fig_path=fig_path)
+        results = arima.parallel_fit_predict()
+
+        for col_name, error, model_fit, forcaste_value, ci in results:
+            if error == 0:
+                unstationary_cols.add(col_name)
+                
+            if col_name not in best_seasonal or error < best_seasonal[col_name][0]:
+                best_seasonal[col_name] = (error, seasonal_day, model_fit, forcaste_value, ci)
+        end = datetime.now()
+        print("seasonal_day {} spends {:.2f} seconds".format(seasonal_day, (end-start).total_seconds()))
+
+    ################################################################################################
+    # 畫圖及儲存預測結果與最佳季節
+    seasonal = {}
+    predict_dict = {}
+    for col_name, value in best_seasonal.items():
+        '''
+        value: (error, seasonal_day, model_fit, forcaste_value, ci)
+        '''
+        if value[2]:
+            seasonal[col_name] = value[1]
+            arima.plot_results(col_name, predictions=value[3], confidence_interval=value[4], vertical_lines_weekday=2, plot_training_data=True, fig_path=fig_path)
+            predict_dict[col_name] = value[3]
+
+    arima.save_predictions(pd.DataFrame(predict_dict))
+
+    with open(os.path.join(fig_path, "best_seasonal.json"), 'w') as file:
+        json.dump(seasonal, file)
