@@ -113,7 +113,7 @@ class ArimaModelerByColumn:
             model_fit = None
             forecasted_values = None
             ci = None
-            error = -1
+            error = np.inf
 
         return col_name, error, model_fit, forecasted_values, ci
 
