@@ -6,6 +6,7 @@ from statsmodels.tsa.arima.model import ARIMA
 from pmdarima import auto_arima
 import matplotlib.dates as mdates
 from joblib import Parallel, delayed
+import pickle
 
 from datetime import datetime, timedelta
 import json
@@ -229,6 +230,9 @@ if __name__ == "__main__":
             seasonal[col_name] = value[1]
             arima.plot_results(col_name, predictions=value[3], confidence_interval=value[4], vertical_lines_weekday=2, plot_training_data=True, fig_path=fig_path)
             predict_dict[col_name] = value[3]
+
+            with open(os.path.join(model_path, f"{col_name}_arima_model.pkl"), 'wb') as pkl:
+                pickle.dump(value[2], pkl)
 
     arima.save_predictions(pd.DataFrame(predict_dict))
 
