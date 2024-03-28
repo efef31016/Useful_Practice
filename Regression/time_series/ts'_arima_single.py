@@ -217,6 +217,7 @@ if __name__ == "__main__":
 
     ################################################################################################
     # 畫圖及儲存預測結果與最佳季節
+    train_error = {}
     seasonal = {}
     predict_dict = {}
     for col_name, value in best_seasonal.items():
@@ -224,11 +225,15 @@ if __name__ == "__main__":
         value: (error, seasonal_day, model_fit, forcaste_value, ci)
         '''
         if value[2]:
+            train_error[col_name] = value[0]
             seasonal[col_name] = value[1]
             arima.plot_results(col_name, predictions=value[3], confidence_interval=value[4], vertical_lines_weekday=2, plot_training_data=True, fig_path=fig_path)
             predict_dict[col_name] = value[3]
 
     arima.save_predictions(pd.DataFrame(predict_dict))
+
+    with open(os.path.join(fig_path, "best_train_error.json"), 'w') as file:
+        json.dump(train_error, file)
 
     with open(os.path.join(fig_path, "best_seasonal.json"), 'w') as file:
         json.dump(seasonal, file)
