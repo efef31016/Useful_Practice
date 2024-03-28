@@ -45,7 +45,7 @@ class ArimaModelerByColumn:
         self.fig_path = fig_path
         self.steep_cols = set()
 
-    def log_msg(msg, log_file="process.log"):
+    def log_msg(self, msg, log_file="process.log"):
         '''
         儲存日誌，將刪除三天前的日誌
         '''
@@ -85,10 +85,10 @@ class ArimaModelerByColumn:
         '''
         透過 AIC 選擇 ARIMA 模型，並進行預測
         '''
-        print(f"Processing {col_name}...")
+        self.log_msg(msg=f"Processing {col_name}...")
         try:
             auto_model = auto_arima(self.result_ts[col_name], seasonal=True, m=self.seasonal_days, trace=True, stepwise=True)
-            print(auto_model.summary())
+            self.log_msg(msg=auto_model.summary())
 
             model = ARIMA(self.result_ts[col_name], order=auto_model.order, seasonal_order=auto_model.seasonal_order)
             model_fit = model.fit()
